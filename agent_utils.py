@@ -1,73 +1,45 @@
 import torch as tr
 import torch.nn as nn
-import random
 import numpy as np
 
 def NNSequential(dimensions, activation, output_activation=nn.Identity):
     layers = []
     for i in range(len(dimensions)-1):
-        act = activation if i < len(dimensions)-2 else output_activation
-        layers += [nn.Linear(dimensions[i], dimensions[i+1]), act]
+        act = activation if i < len(dimensions)-1 else output_activation
+        layers += [nn.Linear(dimensions[i], dimensions[i+1]), act()]
     return nn.Sequential(*layers)
 
-class Memory:
-    def __init__(self, max_size):
-        self.buffer = TensorQueue(max_size)
-    
-    def push(self, state, action, reward, next_state):
-        experience = (state, action, reward, next_state)
-        # raise Exception(experience.shape)
-        self.buffer.enqueue(experience)
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters())
 
-    def sample(self, batch_size):
-        state_batch = []
-        action_batch = []
-        reward_batch = []
-        next_state_batch = []
+def update_target_agent(agent, target_agent):
+    target_agent.actor.load_state_dict(agent.actor.state_dict()) #NOT NEEDED
+    target_agent.critic1.load_state_dict(agent.critic1.state_dict())
+    target_agent.critic2.load_state_dict(agent.critic2.state_dict())
 
-        batch = self.buffer.sample(batch_size)
+class ReplayBuffer:
+    def __init__(self, state_dim, act_dim, size, agent_batch_size):
+        self.state_buf  = np.zeros((size, agent_batch_size, state_dim), dtype=np.float32)
+        self.state2_buf = np.zeros((size, agent_batch_size, state_dim), dtype=np.float32)
+        self.action_buf = np.zeros((size, agent_batch_size, act_dim), dtype=np.float32)
+        self.reward_buf = np.zeros((size, agent_batch_size), dtype=np.float32)
+        self.done_buf   = np.zeros((size, agent_batch_size), dtype=np.float32)
+        self.pointer, self.size, self.max_size = 0, 0, size
 
-        for experience in batch:
-            state, action, reward, next_state = experience
-            state_batch.append(state)
-            action_batch.append(action)
-            reward_batch.append(reward)
-            next_state_batch.append(next_state)
-        
-        return state_batch, action_batch, reward_batch, next_state_batch
+    def store(self, state_now, action, reward, state_next, done):
+        self.state_buf[self.pointer] = state_now
+        self.state2_buf[self.pointer] = state_next
+        self.action_buf[self.pointer] = action.detach().cpu().numpy()
+        self.reward_buf[self.pointer] = reward
+        self.done_buf[self.pointer] = done
+        self.pointer = (self.pointer+1) % self.max_size
+        self.size = min(self.size+1, self.max_size)
 
-    def __len__(self):
-        return len(self.buffer)
-
-
-class TensorQueue:
-    def __init__(self, max_size):
-        self.queue = []
-        self.max_size = max_size
-
-    def is_empty(self):
-        return len(self.queue) == 0
-
-    def is_full(self):
-        return len(self.queue) == self.max_size
-
-    def enqueue(self, item):
-        if self.is_full():
-            self.dequeue()
-        self.queue.append(item)
-
-    def dequeue(self):
-        if self.is_empty():
-            raise IndexError("Queue is empty.")
-        item = self.queue[0].item()
-        self.queue = self.queue[1:]
-        return item
-
-    def size(self):
-        return len(self.queue)
-    
-    def sample(self, N_samples):
-        indices = random.sample(range(self.size()), min(N_samples, self.size()))
-        
-        queue_elements = self.queue[indices]
-        raise Exception(queue_elements.shape)
+    def sample_batch(self, memory_batch_size=32, device='cuda'):
+        idxs = np.random.randint(0, self.size, size=memory_batch_size)
+        batch = dict(state_now = self.state_buf[idxs],
+                     state_next = self.state2_buf[idxs],
+                     action_now = self.action_buf[idxs],
+                     reward = self.reward_buf[idxs],
+                     done = self.done_buf[idxs])
+        return {k: tr.as_tensor(v, dtype=tr.float32, device=device) for k,v in batch.items()}
