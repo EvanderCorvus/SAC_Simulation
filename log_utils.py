@@ -14,7 +14,6 @@ class RLLogger():
 
     def save_state(self, state):
         self.states.append(copy.deepcopy(state))
-        # print(self.states)
 
     def save_episode(self, steps):
         self.episode_states.append(self.states[-steps:])
