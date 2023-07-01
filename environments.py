@@ -9,14 +9,19 @@ class BoxEnvironment1(gym.Env):
         self.goal = goal
     
     def init_state(self, agent_batch_size):
+        self.agent_batch_size = agent_batch_size
         self.state = np.zeros((agent_batch_size,5))
         self.state[:,0] = -0.5*np.ones(agent_batch_size)
 
-    def step(self, action, U0, dt):
+    def step(self, action, U0, dt, characteristic_length = 1):
         x, y = self.state[:,0], self.state[:,1]
         theta = action[:,0]
-        
-        F_x, F_y = force(x,y,U0)
+        #thermal noise
+        noise = np.random.normal(np.zeros(self.agent_batch_size),np.ones(self.agent_batch_size)*np.sqrt(dt))
+        # raise Exception(theta.shape, noise.shape)
+        theta = theta + np.sqrt(dt)*characteristic_length*noise
+
+        F_x, F_y = force(x, y, U0)
 
         e_x = np.cos(theta)
         v_x = e_x + F_x

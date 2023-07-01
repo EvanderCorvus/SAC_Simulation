@@ -1,28 +1,33 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import os
+import copy
 
 class RLLogger():
     def __init__(self):
         self.states = []
+        self.actions = []
         self.losses = []
         self.episode_states = []
+        self.episode_actions = []
         self.episode_losses = []
         self.episode_steps = []
 
     def save_state(self, state):
-        self.states.append(state)
+        self.states.append(copy.deepcopy(state))
+        # print(self.states)
 
-    def save_step(self, state):
-        self.save_state(state)
-
-    def save_episode(self, n_steps):
-        self.episode_states.append(self.states[-n_steps:])
-        self.episode_losses.append(self.losses[-n_steps:])
-        self.episode_steps.append(n_steps)
+    def save_episode(self, steps):
+        self.episode_states.append(self.states[-steps:])
+        self.episode_actions.append(self.actions[-steps:])
+        self.episode_losses.append(self.losses[-steps:])
+        self.episode_steps.append(steps)
 
     def save_loss(self, loss):
         self.losses.append(loss)
+    
+    def save_action(self, action):
+        self.actions.append(action[0])
+
     
 
         
