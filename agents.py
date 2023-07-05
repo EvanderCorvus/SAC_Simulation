@@ -55,7 +55,6 @@ class QCritic(nn.Module):
     
     def forward(self, state, action):
         q = self.net(tr.cat([state, action], dim=-1))
-        print(f'q: {q[0]}')
         return tr.squeeze(q, -1)
 
 class SACAgent(nn.Module):
