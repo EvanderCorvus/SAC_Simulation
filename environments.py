@@ -13,7 +13,7 @@ class BoxEnvironment1(gym.Env):
         self.state = np.zeros((agent_batch_size,state_dim))
         self.state[:,0] = -0.5*np.ones(agent_batch_size)
 
-    def step(self, action, U0, dt, characteristic_length = 1):
+    def step(self, action, U0, dt, characteristic_length = 1, test=False):
         x, y = self.state[:,0], self.state[:,1]
         theta = action[:,0]
         #thermal noise
@@ -39,7 +39,9 @@ class BoxEnvironment1(gym.Env):
         # self.state[:,4] = theta
 
         # Compute reward
-        reward = self.reward(dt, np.array(inside_space).astype(int), self.state[:,0:2])
+        reward = 0
+        if not test:
+            reward = self.reward(dt, np.array(inside_space).astype(int), self.state[:,0:2])
 
         return reward
     
@@ -50,7 +52,7 @@ class BoxEnvironment1(gym.Env):
         wincondition = np.array(self.goal_check()).astype(int)
         reward += wincondition*100
         reward -= not_inside_space*10
-        reward -= np.linalg.norm(position-self.goal.center, axis=1)*10
+        # reward -= np.linalg.norm(position-self.goal.center, axis=1)*10
 
         return reward
     
