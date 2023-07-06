@@ -37,7 +37,7 @@ class ReplayBuffer:
         self.pointer = (self.pointer+1) % self.max_size
         self.size = min(self.size+1, self.max_size)
 
-    def sample_batch(self, memory_batch_size=32, device='cuda'):
+    def sample_batch(self, memory_batch_size, device='cuda'):
         idxs = np.random.randint(0, self.size, size=memory_batch_size)
         batch = dict(state_now = self.state_buf[idxs],
                      state_next = self.state2_buf[idxs],
