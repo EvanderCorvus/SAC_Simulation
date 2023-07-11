@@ -17,7 +17,7 @@ class BoxEnvironment1(gym.Env):
         x, y = self.state[:,0], self.state[:,1]
         theta = action[:,0]
         #thermal noise
-        noise = np.random.normal(np.zeros(self.agent_batch_size),np.ones(self.agent_batch_size)*np.sqrt(dt))
+        noise = np.random.normal(np.zeros(self.agent_batch_size), np.ones(self.agent_batch_size))
         # raise Exception(theta.shape, noise.shape)
         theta = theta + np.sqrt(dt)*characteristic_length*noise
 
